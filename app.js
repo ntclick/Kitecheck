@@ -143,10 +143,20 @@ class SimpleRankChecker {
             const nonce = parseInt(transactionCount, 16);
             console.log(`✅ Transaction nonce fetched from onchain: ${nonce}`);
             
-            // eth_getTransactionCount returns the nonce (next transaction number)
-            // Nonce starts from 0, so if nonce is 46, it means 46 transactions have been sent
-            // This matches KiteScan's transaction count
-            console.log(`📊 Actual transaction count: ${nonce} (nonce = sent transactions)`);
+            // Try to get actual transaction count from API first
+            try {
+                console.log('🔄 Trying to get actual transaction count from API...');
+                const actualCount = await this.getActualTransactionCount(address);
+                if (actualCount > 0) {
+                    console.log(`📊 Actual transaction count from API: ${actualCount}`);
+                    return { result: `0x${actualCount.toString(16)}` };
+                }
+            } catch (apiError) {
+                console.warn('API transaction count failed:', apiError.message);
+            }
+            
+            // Fallback to nonce if API fails
+            console.log(`📊 Using nonce as transaction count: ${nonce}`);
             return { result: transactionCount };
         } catch (error) {
             console.warn('Transaction count not available from ETH RPC:', error.message);
@@ -175,6 +185,57 @@ class SimpleRankChecker {
             // If all onchain methods fail, return 0 (no fake data)
             console.log('❌ All onchain methods failed, returning 0 transactions');
             return { result: '0x0' };
+        }
+    }
+
+    /**
+     * Get actual transaction count from API
+     */
+    async getActualTransactionCount(address) {
+        try {
+            console.log('🔍 Fetching actual transaction count from API...');
+            const txUrl = `https://testnet.kitescan.ai/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10000&sort=desc`;
+            
+            // Try multiple CORS proxies
+            const corsProxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(txUrl)}`,
+                `https://cors-anywhere.herokuapp.com/${txUrl}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(txUrl)}`
+            ];
+            
+            for (let i = 0; i < corsProxies.length; i++) {
+                try {
+                    const corsProxyUrl = corsProxies[i];
+                    console.log(`🔄 Trying CORS proxy ${i + 1}/${corsProxies.length} for transaction count...`);
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+                    
+                    const response = await fetch(corsProxyUrl, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.result && Array.isArray(data.result)) {
+                            const actualCount = data.result.length;
+                            console.log(`✅ Actual transaction count from API: ${actualCount}`);
+                            return actualCount;
+                        }
+                    }
+                } catch (proxyError) {
+                    console.warn(`CORS proxy ${i + 1} failed for transaction count:`, proxyError.message);
+                    if (i === corsProxies.length - 1) {
+                        throw proxyError;
+                    }
+                }
+            }
+            
+            return 0;
+        } catch (error) {
+            console.warn('Failed to get actual transaction count:', error.message);
+            return 0;
         }
     }
 
