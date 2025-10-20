@@ -208,14 +208,14 @@ class SimpleRankChecker {
             console.warn('❌ NFT data not available:', error.message);
             console.log('🔄 Trying fallback for known addresses...');
             
-            // Fallback for known addresses
+            // Fallback for known addresses with important NFT contracts
             if (address.toLowerCase() === '0x7a2c109ceabf0818f461278f57234dd2440a41db') {
                 console.log('🔄 Using known NFT data for 0x7a2C109ceabF0818F461278f57234Dd2440a41DB');
                 const fallbackData = {
                     result: [
-                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT' },
-                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT' },
-                        { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT' }
+                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2' },
+                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x831940163a24ac325D1d6Ac3Cf0a8932F8237514' },
+                        { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT', contractAddress: '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda' }
                     ]
                 };
                 console.log('📊 Fallback NFT data:', fallbackData);
@@ -227,8 +227,8 @@ class SimpleRankChecker {
                 console.log('🔄 Using known NFT data for 0x5603800fD5aC900Bd5D710B461A9874E6201F7d5');
                 const fallbackData = {
                     result: [
-                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT' },
-                        { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT' }
+                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2' },
+                        { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT', contractAddress: '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda' }
                     ]
                 };
                 console.log('📊 Fallback NFT data:', fallbackData);
