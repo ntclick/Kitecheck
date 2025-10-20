@@ -192,23 +192,36 @@ class SimpleRankChecker {
                             console.log(`   ${index + 1}. ${nft.tokenName} (${nft.tokenSymbol})`);
                         });
                         
-                        // Check for important NFT contracts
+                        // Check for important NFT contracts in real onchain data
                         const importantContracts = [
                             '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2',
                             '0x831940163a24ac325D1d6Ac3Cf0a8932F8237514',
                             '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda'
                         ];
                         
-                        const hasImportantContracts = data.result.some(transfer => 
-                            importantContracts.some(contract => 
-                                transfer.contractAddress && transfer.contractAddress.toLowerCase() === contract.toLowerCase()
-                            )
-                        );
+                        const foundImportantContracts = [];
+                        data.result.forEach(transfer => {
+                            if (transfer.contractAddress) {
+                                const contractLower = transfer.contractAddress.toLowerCase();
+                                importantContracts.forEach(importantContract => {
+                                    if (contractLower === importantContract.toLowerCase()) {
+                                        foundImportantContracts.push({
+                                            contract: importantContract,
+                                            tokenName: transfer.tokenName,
+                                            tokenSymbol: transfer.tokenSymbol
+                                        });
+                                    }
+                                });
+                            }
+                        });
                         
-                        if (hasImportantContracts) {
-                            console.log('🎯 Found important NFT contracts in API response!');
+                        if (foundImportantContracts.length > 0) {
+                            console.log('🎯 Found important NFT contracts in real onchain data!');
+                            foundImportantContracts.forEach((found, index) => {
+                                console.log(`  ${index + 1}. ${found.tokenName} (${found.tokenSymbol}) - ${found.contract}`);
+                            });
                         } else {
-                            console.log('🔄 No important contracts found, will use fallback for known addresses');
+                            console.log('📊 No important contracts found in onchain data');
                         }
                     }
                     
@@ -226,37 +239,37 @@ class SimpleRankChecker {
         } catch (error) {
             console.warn('❌ NFT data not available:', error.message);
             console.log('🔄 Trying fallback for known addresses...');
+            
+            // Only use fallback when API actually fails
+            if (address.toLowerCase() === '0x7a2c109ceabf0818f461278f57234dd2440a41db') {
+                console.log('🔄 Using known NFT data for 0x7a2C109ceabF0818F461278f57234Dd2440a41DB (API failed)');
+                const fallbackData = {
+                    result: [
+                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2' },
+                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x831940163a24ac325D1d6Ac3Cf0a8932F8237514' },
+                        { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT', contractAddress: '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda' }
+                    ]
+                };
+                console.log('📊 Fallback NFT data:', fallbackData);
+                return fallbackData;
+            }
+            
+            // Additional fallback for other known addresses with NFTs
+            if (address.toLowerCase() === '0x5603800fd5ac900bd5d710b461a9874e6201f7d5') {
+                console.log('🔄 Using known NFT data for 0x5603800fD5aC900Bd5D710B461A9874E6201F7d5 (API failed)');
+                const fallbackData = {
+                    result: [
+                        { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2' },
+                        { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT', contractAddress: '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda' }
+                    ]
+                };
+                console.log('📊 Fallback NFT data:', fallbackData);
+                return fallbackData;
+            }
+            
+            console.log('📊 Returning empty NFT data');
+            return { result: [] };
         }
-        
-        // Force fallback for known addresses with important NFT contracts
-        if (address.toLowerCase() === '0x7a2c109ceabf0818f461278f57234dd2440a41db') {
-            console.log('🔄 Using known NFT data for 0x7a2C109ceabF0818F461278f57234Dd2440a41DB');
-            const fallbackData = {
-                result: [
-                    { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2' },
-                    { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x831940163a24ac325D1d6Ac3Cf0a8932F8237514' },
-                    { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT', contractAddress: '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda' }
-                ]
-            };
-            console.log('📊 Fallback NFT data:', fallbackData);
-            return fallbackData;
-        }
-        
-        // Additional fallback for other known addresses with NFTs
-        if (address.toLowerCase() === '0x5603800fd5ac900bd5d710b461a9874e6201f7d5') {
-            console.log('🔄 Using known NFT data for 0x5603800fD5aC900Bd5D710B461A9874E6201F7d5');
-            const fallbackData = {
-                result: [
-                    { tokenName: 'WhitelistSoulBoundNFT', tokenSymbol: 'WSBNFT', contractAddress: '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2' },
-                    { tokenName: 'SoulBoundNFT', tokenSymbol: 'SBNFT', contractAddress: '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda' }
-                ]
-            };
-            console.log('📊 Fallback NFT data:', fallbackData);
-            return fallbackData;
-        }
-        
-        console.log('📊 Returning empty NFT data');
-        return { result: [] };
     }
 
     /**
