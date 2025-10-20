@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix UI Display Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .rank-badge {
+            background: linear-gradient(135deg, #BDC3C7, #95A5A6);
+            color: #2c3e50;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .rank-tier {
+            font-size: 1.2rem;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+        .rank-level {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        button {
+            background: #2ECC71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #27AE60;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 UI Display Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="showResults()">Show Results</button>
+        <button onclick="hideResults()">Hide Results</button>
+        <button onclick="testElements()">Test Elements</button>
+    </div>
+    
+    <div id="resultsSection" class="test-section hidden">
+        <h2>Results Section</h2>
+        <div id="rankBadge" class="rank-badge">
+            <div class="rank-tier">
+                <span class="rank-icon">🌱</span>
+                Kite Beginner
+            </div>
+            <div class="rank-level">Level 8 - Beginner (10-49)</div>
+        </div>
+        
+        <div>
+            <p><strong>Account:</strong> <span id="accountName">Test Account</span></p>
+            <p><strong>Address:</strong> <span id="accountAddress">0xE24546D5Ff7bf460Ebdaa36847e38669996D1a0D</span></p>
+            <p><strong>Balance:</strong> <span id="balance">0.200 KITE</span></p>
+            <p><strong>Transactions:</strong> <span id="transactions">41</span></p>
+            <p><strong>NFTs:</strong> <span id="soundboundNFTs">0</span></p>
+            <p><strong>Score:</strong> <span id="scoreValue">150 pts</span></p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Debug Info</h2>
+        <div id="debugInfo"></div>
+    </div>
+
+    <script>
+        function showResults() {
+            console.log('🎯 Showing results...');
+            const resultsSection = document.getElementById('resultsSection');
+            console.log('resultsSection:', resultsSection);
+            
+            if (resultsSection) {
+                console.log('Before - classes:', resultsSection.className);
+                console.log('Before - display:', window.getComputedStyle(resultsSection).display);
+                
+                resultsSection.classList.remove('hidden');
+                
+                console.log('After - classes:', resultsSection.className);
+                console.log('After - display:', window.getComputedStyle(resultsSection).display);
+                
+                updateDebugInfo('Results section shown successfully');
+            } else {
+                console.error('❌ resultsSection not found!');
+                updateDebugInfo('ERROR: resultsSection not found!');
+            }
+        }
+        
+        function hideResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            if (resultsSection) {
+                resultsSection.classList.add('hidden');
+                updateDebugInfo('Results section hidden');
+            }
+        }
+        
+        function testElements() {
+            const elements = [
+                'resultsSection', 'rankBadge', 'accountName', 'accountAddress',
+                'balance', 'transactions', 'soundboundNFTs', 'scoreValue'
+            ];
+            
+            let debugText = 'Element Check:<br>';
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    debugText += `✅ ${id}: Found<br>`;
+                } else {
+                    debugText += `❌ ${id}: NOT FOUND<br>`;
+                }
+            });
+            
+            updateDebugInfo(debugText);
+        }
+        
+        function updateDebugInfo(text) {
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugInfo) {
+                debugInfo.innerHTML = text;
+            }
+        }
+        
+        // Auto-run test on load
+        window.onload = function() {
+            console.log('🚀 Page loaded, running initial test...');
+            testElements();
+        };
+    </script>
+</body>
+</html>

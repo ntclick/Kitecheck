@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kite AI Chain Leaderboard</title>
+        <link rel="stylesheet" href="styles-vibrant.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <div class="logo-image"></div>
+                <h1 class="logo">Kite AI Chain</h1>
+            </div>
+            <p class="subtitle">Leaderboard Rank Checker</p>
+            <a href="https://x.com/trungkts29" target="_blank" class="author-info">
+                <i class="fab fa-twitter"></i>
+                <span>Created by @trungkts29</span>
+            </a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Input Section -->
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="addressInput" placeholder="Enter wallet address (0x...)" />
+                <button id="checkRankBtn" class="check-btn">
+                    <i class="fas fa-search"></i>
+                    Check Rank
+                </button>
+            </div>
+            <div class="cors-notice">
+                <i class="fas fa-info-circle"></i>
+                <span>Using real data from KiteScan API. No demo mode.</span>
+            </div>
+        </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section hidden">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h2>Ranking Results</h2>
+                        <span id="rankBadge" class="rank-badge">Kite Beginner</span>
+                    </div>
+                    
+                    <div class="result-content">
+                        <div class="account-info">
+                            <div class="account-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="account-details">
+                                <h3 id="accountName">Account Name</h3>
+                                <p id="accountAddress" class="address">0x...</p>
+                            </div>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="balance">0</span>
+                                    <span class="stat-label">KITE Balance</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="transactions">0</span>
+                                    <span class="stat-label">Transactions</span>
+                                </div>
+                            </div>
+
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-value" id="soundboundNFTs">0</span>
+                                    <span class="stat-label">Soundbound NFTs</span>
+                                </div>
+                            </div>
+
+                            <!-- Kite Tokens removed from ranking -->
+                        </div>
+
+                        <div class="score-section">
+                            <div class="score-display">
+                                <span class="score-label">Total Score:</span>
+                                <span id="scoreValue" class="score-value">0 pts</span>
+                                <div id="multiplierInfo" class="multiplier-info hidden">
+                                    <span class="multiplier-badge">x<span id="multiplierValue">1.0</span></span>
+                                    <span class="multiplier-text">NFT Multiplier</span>
+                                </div>
+                            </div>
+                            <div class="score-breakdown">
+                                <div class="breakdown-item">
+                                    <span class="breakdown-label">Balance:</span>
+                                    <span id="balanceScore" class="breakdown-value">0 pts</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="breakdown-label">Transactions:</span>
+                                    <span id="transactionScore" class="breakdown-value">0 pts</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="breakdown-label">Activity:</span>
+                                    <span id="activityScore" class="breakdown-value">0 pts</span>
+                                </div>
+                                <div class="breakdown-item nft-priority">
+                                    <span class="breakdown-label">🎵 NFT Soundbound:</span>
+                                    <span id="nftScore" class="breakdown-value">0 pts</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="breakdown-label">Kite Tokens:</span>
+                                    <span id="tokenScore" class="breakdown-value">0 pts</span>
+                                </div>
+                            </div>
+                            <div id="nftStatus" class="nft-status hidden">
+                                <div class="nft-status-item">
+                                    <i class="fas fa-trophy"></i>
+                                    <span id="nftStatusText">3 NFT Soundbound - Maximum multiplier!</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Section -->
+            <div id="loadingSection" class="loading-section hidden">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Checking rank...</p>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div id="errorSection" class="error-section hidden">
+                <div class="error-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Lỗi</h3>
+                    <p id="errorMessage">Không thể kiểm tra xếp hạng</p>
+                    <button id="retryBtn" class="retry-btn">Thử lại</button>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div id="toastContainer" class="toast-container"></div>
+
+        <script src="app.js"></script>
+    </body>
+    </html>
