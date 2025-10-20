@@ -10,6 +10,10 @@ class SimpleRankChecker {
         this.blockscoutURL = 'https://testnet.kitescan.ai';
         this.workingAuthMethod = 5; // Default to CORS proxy method
         
+        // Add caching for better performance
+        this.cache = new Map();
+        this.cacheTimeout = 30000; // 30 seconds cache
+        
         this.initializeElements();
         this.bindEvents();
     }
@@ -65,13 +69,20 @@ class SimpleRankChecker {
         };
 
         try {
+            // Add timeout for faster failure
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -84,7 +95,11 @@ class SimpleRankChecker {
 
             return data.result;
         } catch (error) {
-            console.error(`ETH RPC ${method} failed:`, error);
+            if (error.name === 'AbortError') {
+                console.warn(`ETH RPC ${method} timeout (3s)`);
+            } else {
+                console.warn(`ETH RPC ${method} failed:`, error.message);
+            }
             throw error;
         }
     }
@@ -165,7 +180,15 @@ class SimpleRankChecker {
             const tokenUrl = `https://testnet.kitescan.ai/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=1&offset=100&sort=desc`;
             const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(tokenUrl)}`;
             
-            const response = await fetch(corsProxyUrl);
+            // Add timeout for faster failure
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch(corsProxyUrl, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
             if (response.ok) {
                 const data = await response.json();
                 console.log('✅ Token data fetched:', data.result?.length || 0, 'transfers');
@@ -174,7 +197,11 @@ class SimpleRankChecker {
                 throw new Error(`HTTP ${response.status}`);
             }
         } catch (error) {
-            console.warn('Token data not available:', error.message);
+            if (error.name === 'AbortError') {
+                console.warn('Token data timeout (5s)');
+            } else {
+                console.warn('Token data not available:', error.message);
+            }
             return { result: [] };
         }
     }
@@ -192,9 +219,9 @@ class SimpleRankChecker {
             
             console.log('🌐 CORS Proxy URL:', corsProxyUrl);
             
-            // Add timeout to prevent hanging
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+               // Add timeout to prevent hanging
+               const controller = new AbortController();
+               const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
             
             try {
                 const response = await fetch(corsProxyUrl, {
@@ -315,6 +342,14 @@ class SimpleRankChecker {
      */
     async getAccountData(address) {
         try {
+            // Check cache first
+            const cacheKey = `account_${address.toLowerCase()}`;
+            const cached = this.cache.get(cacheKey);
+            if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+                console.log('⚡ Using cached account data');
+                return cached.data;
+            }
+            
             console.log('🔍 Fetching onchain data for:', address);
             console.log('🔑 Using optimized ETH RPC methods...');
             
@@ -438,7 +473,7 @@ class SimpleRankChecker {
             console.log('- Soundbound NFTs:', soundboundNFTs);
             console.log('- Kite Tokens:', kiteTokens);
 
-            return {
+            const accountData = {
                 address: address,
                 name: accountInfo?.name || `Account ${address.slice(0, 8)}...`,
                 balance: balanceInEther,
@@ -449,6 +484,15 @@ class SimpleRankChecker {
                 apiAvailable: true,
                 onchainVerified: true
             };
+
+            // Cache the result
+            this.cache.set(cacheKey, {
+                data: accountData,
+                timestamp: Date.now()
+            });
+            console.log('💾 Cached account data for 30 seconds');
+
+            return accountData;
 
         } catch (error) {
             console.error('Error getting account data:', error);
@@ -741,6 +785,12 @@ class SimpleRankChecker {
         this.checkRankBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
     }
 
+    updateLoadingText(text) {
+        if (this.checkRankBtn) {
+            this.checkRankBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
+        }
+    }
+
     /**
      * Show error
      */
@@ -817,6 +867,7 @@ class SimpleRankChecker {
         }
         
         this.showLoading();
+        this.updateLoadingText('Fetching onchain data...');
         
         try {
             console.log('🔍 Checking rank for:', address);
@@ -826,11 +877,13 @@ class SimpleRankChecker {
             console.log('✅ Successfully fetched real data from ETH RPC');
             
             // Calculate scores
+            this.updateLoadingText('Calculating scores...');
             console.log('🧮 Calculating scores...');
             const scores = this.calculateScoreBreakdown(accountData);
             console.log('📊 Calculated scores:', scores);
             
             // Display results
+            this.updateLoadingText('Determining rank...');
             console.log('🎯 Calling displayResults...');
             this.displayResults(accountData, scores);
             
