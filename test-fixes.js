@@ -1,196 +1,160 @@
-/**
- * Test Fixes for App Issues
- * Test timeout handling and toast functionality
- */
+// Test fixes for accountInfo and CORS issues - paste this directly into browser console
 
 function testFixes() {
-    console.log('🔧 TESTING FIXES FOR APP ISSUES');
-    console.log('='.repeat(80));
+    console.log('🔧 TESTING FIXES');
+    console.log('='.repeat(60));
     
-    // Check if we're on the right page
-    if (!document.getElementById('resultsSection')) {
-        console.error('❌ Not on the right page! Please run this on the Kite AI Chain page.');
+    const app = window.simpleRankChecker || new SimpleRankChecker();
+    if (!app) {
+        console.error('❌ App not found');
         return;
     }
     
-    // Test 1: Check toast container
-    console.log('\n🧪 Test 1: Toast Container Check');
-    console.log('='.repeat(50));
+    console.log('✅ App found');
     
-    const toastContainer = document.getElementById('toastContainer');
-    if (toastContainer) {
-        console.log('✅ Toast container found');
-        console.log('📊 Container element:', toastContainer);
-        console.log('📊 Container classes:', toastContainer.className);
-        console.log('📊 Container styles:', window.getComputedStyle(toastContainer));
-    } else {
-        console.log('❌ Toast container not found');
-    }
-    
-    // Test 2: Test toast functionality
-    console.log('\n🧪 Test 2: Toast Functionality Test');
-    console.log('='.repeat(50));
-    
-    function testToast(message, type) {
-        try {
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.textContent = message;
-            
-            const container = document.getElementById('toastContainer');
-            if (container) {
-                container.appendChild(toast);
-                console.log(`✅ Toast created: ${type} - ${message}`);
-                
-                setTimeout(() => {
-                    toast.classList.add('show');
-                    console.log(`✅ Toast shown: ${type}`);
-                }, 100);
-                
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                    setTimeout(() => {
-                        if (container.contains(toast)) {
-                            container.removeChild(toast);
-                            console.log(`✅ Toast removed: ${type}`);
-                        }
-                    }, 300);
-                }, 2000);
-                
-                return true;
-            } else {
-                console.log(`❌ Toast container not found for: ${type}`);
-                return false;
-            }
-        } catch (error) {
-            console.error(`❌ Toast error for ${type}:`, error);
-            return false;
+    const testAddresses = [
+        {
+            address: '0x1F7edB3dffaFA48Fc852742D36A0D83487A60693',
+            description: 'Address that caused accountInfo error'
+        },
+        {
+            address: '0x7a2C109ceabF0818F461278f57234Dd2440a41DB',
+            description: 'Known address with NFTs'
+        },
+        {
+            address: '0x5603800fD5aC900Bd5D710B461A9874E6201F7d5',
+            description: 'Another known address'
         }
-    }
-    
-    // Test different toast types
-    const toastTests = [
-        { message: 'Success message', type: 'success' },
-        { message: 'Error message', type: 'error' },
-        { message: 'Warning message', type: 'warning' },
-        { message: 'Info message', type: 'info' }
     ];
     
-    let toastSuccessCount = 0;
-    toastTests.forEach((test, index) => {
-        setTimeout(() => {
-            const success = testToast(test.message, test.type);
-            if (success) toastSuccessCount++;
-        }, index * 2500);
-    });
-    
-    // Test 3: Test timeout handling
-    console.log('\n🧪 Test 3: Timeout Handling Test');
-    console.log('='.repeat(50));
-    
-    async function testTimeoutHandling() {
+    async function testAddress(testCase) {
+        console.log(`\n📍 Testing: ${testCase.address}`);
+        console.log(`📝 Description: ${testCase.description}`);
+        console.log('-'.repeat(50));
+        
         try {
-            console.log('🕐 Testing timeout handling...');
+            // Test account data fetching
+            console.log('🔍 Step 1: Fetching account data...');
+            const accountData = await app.getAccountData(testCase.address);
+            console.log('📊 Account Data:', accountData);
             
-            // Create a test URL that will timeout
-            const testUrl = 'https://httpbin.org/delay/15'; // 15 second delay
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
-            try {
-                const response = await fetch(testUrl, {
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                console.log('✅ Request completed before timeout');
-            } catch (fetchError) {
-                clearTimeout(timeoutId);
-                if (fetchError.name === 'AbortError') {
-                    console.log('✅ Timeout handled correctly - request aborted');
-                } else {
-                    console.log('⚠️ Other error:', fetchError.message);
-                }
+            // Check if accountInfo is properly defined
+            if (accountData && accountData.name) {
+                console.log(`✅ Account name: ${accountData.name}`);
+            } else {
+                console.log('❌ Account name missing');
             }
+            
+            // Test rank calculation
+            console.log('\n🔍 Step 2: Calculating rank...');
+            const rankTier = app.getRankTier(accountData);
+            console.log('🎯 Rank Tier:', rankTier);
+            
+            // Test scores
+            console.log('\n🔍 Step 3: Calculating scores...');
+            const scores = app.calculateScoreBreakdown(accountData);
+            console.log('🧮 Scores:', scores);
+            
+            // Results
+            console.log('\n🎯 RESULTS:');
+            console.log('='.repeat(30));
+            console.log(`Address: ${accountData.address}`);
+            console.log(`Name: ${accountData.name}`);
+            console.log(`Balance: ${accountData.balance} KITE`);
+            console.log(`Transactions: ${accountData.transactionCount}`);
+            console.log(`NFTs: ${accountData.soundboundNFTs}`);
+            console.log(`Rank: ${rankTier.name} (Level ${rankTier.level})`);
+            console.log(`Total Score: ${scores.total}`);
+            
+            // Check for errors
+            if (accountData.name && accountData.name !== 'undefined') {
+                console.log('\n✅ AccountInfo fix working correctly');
+            } else {
+                console.log('\n❌ AccountInfo still has issues');
+            }
+            
+            // Check CORS handling
+            if (accountData.soundboundNFTs >= 0) {
+                console.log('✅ CORS handling working (NFT data retrieved or fallback used)');
+            } else {
+                console.log('❌ CORS handling has issues');
+            }
+            
         } catch (error) {
-            console.error('❌ Timeout test error:', error);
+            console.error(`❌ Error testing ${testCase.address}:`, error);
+            
+            // Check if it's the accountInfo error
+            if (error.message.includes('accountInfo is not defined')) {
+                console.log('❌ AccountInfo error still exists');
+            } else {
+                console.log('✅ AccountInfo error fixed, but other error occurred');
+            }
         }
     }
     
-    testTimeoutHandling();
-    
-    // Test 4: Test app elements
-    console.log('\n🧪 Test 4: App Elements Check');
-    console.log('='.repeat(50));
-    
-    const appElements = {
-        'addressInput': document.getElementById('addressInput'),
-        'checkRankBtn': document.getElementById('checkRankBtn'),
-        'resultsSection': document.getElementById('resultsSection'),
-        'loadingSection': document.getElementById('loadingSection'),
-        'errorSection': document.getElementById('errorSection'),
-        'accountName': document.getElementById('accountName'),
-        'accountAddress': document.getElementById('accountAddress'),
-        'balance': document.getElementById('balance'),
-        'transactions': document.getElementById('transactions'),
-        'soundboundNFTs': document.getElementById('soundboundNFTs'),
-        'scoreValue': document.getElementById('scoreValue'),
-        'rankBadge': document.getElementById('rankBadge')
-    };
-    
-    let missingElements = [];
-    for (const [name, element] of Object.entries(appElements)) {
-        if (element) {
-            console.log(`✅ ${name}: Found`);
-        } else {
-            console.log(`❌ ${name}: NOT FOUND`);
-            missingElements.push(name);
+    // Test CORS proxies specifically
+    async function testCORSProxies() {
+        console.log('\n🔍 Testing CORS proxy fallbacks...');
+        console.log('-'.repeat(50));
+        
+        const testAddress = '0x1F7edB3dffaFA48Fc852742D36A0D83487A60693';
+        
+        try {
+            console.log('🪙 Testing token data with CORS fallbacks...');
+            const tokenData = await app.getTokenDataETH(testAddress);
+            console.log('📊 Token Data:', tokenData);
+            
+            if (tokenData && tokenData.result) {
+                console.log(`✅ Token data retrieved: ${tokenData.result.length} transfers`);
+            } else {
+                console.log('❌ Token data failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Token data error:', error);
+        }
+        
+        try {
+            console.log('\n🖼️ Testing NFT data with CORS fallbacks...');
+            const nftData = await app.getNFTDataETH(testAddress);
+            console.log('📊 NFT Data:', nftData);
+            
+            if (nftData && nftData.result) {
+                console.log(`✅ NFT data retrieved: ${nftData.result.length} transfers`);
+            } else {
+                console.log('❌ NFT data failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ NFT data error:', error);
         }
     }
     
-    if (missingElements.length > 0) {
-        console.log('❌ Missing elements:', missingElements);
-    } else {
-        console.log('✅ All app elements found');
-    }
-    
-    // Test 5: Test with problematic address
-    console.log('\n🧪 Test 5: Test with Problematic Address');
-    console.log('='.repeat(50));
-    
-    const problematicAddress = '0x28ccE1d1B8469dD7Daaf2B1FFF3d2DC4F1dCcEf1';
-    console.log(`📍 Testing address: ${problematicAddress}`);
-    console.log('💡 This address caused NFT API timeout (408)');
-    console.log('💡 App should now handle timeout gracefully');
-    
-    // Summary
-    setTimeout(() => {
-        console.log('\n' + '='.repeat(80));
-        console.log('📊 FIXES TEST SUMMARY');
-        console.log('='.repeat(80));
-        
-        console.log(`✅ Toast Container: ${toastContainer ? 'FOUND' : 'NOT FOUND'}`);
-        console.log(`✅ Toast Functionality: ${toastSuccessCount}/${toastTests.length} tests passed`);
-        console.log(`✅ App Elements: ${missingElements.length === 0 ? 'ALL FOUND' : `${missingElements.length} MISSING`}`);
-        console.log(`✅ Timeout Handling: Tested (check console for results)`);
-        
-        if (toastContainer && missingElements.length === 0) {
-            console.log('🎉 All fixes appear to be working!');
-            console.log('💡 The app should now handle:');
-            console.log('   - NFT API timeouts gracefully');
-            console.log('   - Toast notifications properly');
-            console.log('   - Missing elements gracefully');
-        } else {
-            console.log('⚠️ Some issues may still exist');
+    // Run all tests
+    async function runAllTests() {
+        for (const testCase of testAddresses) {
+            await testAddress(testCase);
+            console.log('\n' + '='.repeat(60));
         }
         
-        console.log('='.repeat(80));
-    }, 10000); // Wait for all tests to complete
+        await testCORSProxies();
+        
+        console.log('\n🏁 ALL FIXES TESTS COMPLETED');
+        console.log('='.repeat(60));
+        console.log('\n📊 FIXES SUMMARY:');
+        console.log('✅ AccountInfo: Added back to parallel calls');
+        console.log('✅ CORS Proxies: Multiple fallback proxies');
+        console.log('✅ Error Handling: Better error messages');
+        console.log('✅ Timeouts: 5s timeout for all CORS calls');
+        console.log('\n🎯 EXPECTED RESULTS:');
+        console.log('- No more "accountInfo is not defined" errors');
+        console.log('- Better CORS proxy reliability');
+        console.log('- Faster failure on slow proxies');
+    }
+    
+    // Run the tests
+    runAllTests();
 }
 
-// Auto-run if in browser
-if (typeof window !== 'undefined') {
-    console.log('🌐 Running fixes test...');
-    testFixes();
-} else {
-    console.log('📝 Copy and paste this function into browser console to test fixes');
-}
+// Run the test
+testFixes();

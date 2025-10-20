@@ -178,23 +178,41 @@ class SimpleRankChecker {
         try {
             console.log('🪙 Fetching token data via CORS proxy...');
             const tokenUrl = `https://testnet.kitescan.ai/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=1&offset=100&sort=desc`;
-            const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(tokenUrl)}`;
             
-            // Add timeout for faster failure
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            // Try multiple CORS proxies
+            const corsProxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(tokenUrl)}`,
+                `https://cors-anywhere.herokuapp.com/${tokenUrl}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(tokenUrl)}`
+            ];
             
-            const response = await fetch(corsProxyUrl, {
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Token data fetched:', data.result?.length || 0, 'transfers');
-                return data;
-            } else {
-                throw new Error(`HTTP ${response.status}`);
+            for (let i = 0; i < corsProxies.length; i++) {
+                try {
+                    const corsProxyUrl = corsProxies[i];
+                    console.log(`🔄 Trying CORS proxy ${i + 1}/${corsProxies.length}...`);
+                    
+                    // Add timeout for faster failure
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                    
+                    const response = await fetch(corsProxyUrl, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ Token data fetched:', data.result?.length || 0, 'transfers');
+                        return data;
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (proxyError) {
+                    console.warn(`CORS proxy ${i + 1} failed:`, proxyError.message);
+                    if (i === corsProxies.length - 1) {
+                        throw proxyError; // Last proxy failed
+                    }
+                }
             }
         } catch (error) {
             if (error.name === 'AbortError') {
@@ -215,76 +233,85 @@ class SimpleRankChecker {
             console.log('🔍 Address:', address);
             
             const nftUrl = `https://testnet.kitescan.ai/api?module=account&action=tokennfttx&address=${address}&startblock=0&endblock=99999999&page=1&offset=100&sort=desc`;
-            const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(nftUrl)}`;
             
-            console.log('🌐 CORS Proxy URL:', corsProxyUrl);
+            // Try multiple CORS proxies
+            const corsProxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(nftUrl)}`,
+                `https://cors-anywhere.herokuapp.com/${nftUrl}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(nftUrl)}`
+            ];
             
-               // Add timeout to prevent hanging
-               const controller = new AbortController();
-               const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
-            try {
-                const response = await fetch(corsProxyUrl, {
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                
-                console.log('📡 Response status:', response.status, response.statusText);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ NFT API response:', data);
-                    console.log('📊 NFT transfers found:', data.result?.length || 0);
+            for (let i = 0; i < corsProxies.length; i++) {
+                try {
+                    const corsProxyUrl = corsProxies[i];
+                    console.log(`🔄 Trying CORS proxy ${i + 1}/${corsProxies.length}...`);
+                    console.log('🌐 CORS Proxy URL:', corsProxyUrl);
                     
-                    if (data.result && Array.isArray(data.result)) {
-                        console.log('🔍 First few NFT transfers:');
-                        data.result.slice(0, 3).forEach((nft, index) => {
-                            console.log(`   ${index + 1}. ${nft.tokenName} (${nft.tokenSymbol})`);
-                        });
+                    // Add timeout to prevent hanging
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                    
+                    const response = await fetch(corsProxyUrl, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                
+                    console.log('📡 Response status:', response.status, response.statusText);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ NFT API response:', data);
+                        console.log('📊 NFT transfers found:', data.result?.length || 0);
                         
-                        // Check for important NFT contracts in real onchain data
-                        const importantContracts = [
-                            '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2',
-                            '0x831940163a24ac325D1d6Ac3Cf0a8932F8237514',
-                            '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda'
-                        ];
-                        
-                        const foundImportantContracts = [];
-                        data.result.forEach(transfer => {
-                            if (transfer.contractAddress) {
-                                const contractLower = transfer.contractAddress.toLowerCase();
-                                importantContracts.forEach(importantContract => {
-                                    if (contractLower === importantContract.toLowerCase()) {
-                                        foundImportantContracts.push({
-                                            contract: importantContract,
-                                            tokenName: transfer.tokenName,
-                                            tokenSymbol: transfer.tokenSymbol
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                        
-                        if (foundImportantContracts.length > 0) {
-                            console.log('🎯 Found important NFT contracts in real onchain data!');
-                            foundImportantContracts.forEach((found, index) => {
-                                console.log(`  ${index + 1}. ${found.tokenName} (${found.tokenSymbol}) - ${found.contract}`);
+                        if (data.result && Array.isArray(data.result)) {
+                            console.log('🔍 First few NFT transfers:');
+                            data.result.slice(0, 3).forEach((nft, index) => {
+                                console.log(`   ${index + 1}. ${nft.tokenName} (${nft.tokenSymbol})`);
                             });
-                        } else {
-                            console.log('📊 No important contracts found in onchain data');
+                            
+                            // Check for important NFT contracts in real onchain data
+                            const importantContracts = [
+                                '0x7dD7d801f93d6A1C2DF96374F9A5A3A9C2aEd0b2',
+                                '0x831940163a24ac325D1d6Ac3Cf0a8932F8237514',
+                                '0xC17d5AA3045d9A4a0915972c5da94f6fb1EFFBda'
+                            ];
+                            
+                            const foundImportantContracts = [];
+                            data.result.forEach(transfer => {
+                                if (transfer.contractAddress) {
+                                    const contractLower = transfer.contractAddress.toLowerCase();
+                                    importantContracts.forEach(importantContract => {
+                                        if (contractLower === importantContract.toLowerCase()) {
+                                            foundImportantContracts.push({
+                                                contract: importantContract,
+                                                tokenName: transfer.tokenName,
+                                                tokenSymbol: transfer.tokenSymbol
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                            
+                            if (foundImportantContracts.length > 0) {
+                                console.log('🎯 Found important NFT contracts in real onchain data!');
+                                foundImportantContracts.forEach((found, index) => {
+                                    console.log(`  ${index + 1}. ${found.tokenName} (${found.tokenSymbol}) - ${found.contract}`);
+                                });
+                            } else {
+                                console.log('📊 No important contracts found in onchain data');
+                            }
                         }
+                        
+                        return data;
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                    
-                    return data;
-                } else {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                } catch (proxyError) {
+                    console.warn(`CORS proxy ${i + 1} failed:`, proxyError.message);
+                    if (i === corsProxies.length - 1) {
+                        throw proxyError; // Last proxy failed
+                    }
                 }
-            } catch (fetchError) {
-                clearTimeout(timeoutId);
-                if (fetchError.name === 'AbortError') {
-                    throw new Error('Request timeout - NFT API took too long to respond');
-                }
-                throw fetchError;
             }
         } catch (error) {
             console.warn('❌ NFT data not available:', error.message);
@@ -362,7 +389,8 @@ class SimpleRankChecker {
             
             // Then fetch additional data in parallel
             console.log('⚡ Fetching additional data...');
-            const [tokenData, nftData] = await Promise.all([
+            const [accountInfo, tokenData, nftData] = await Promise.all([
+                this.getAccountInfoETH(address),
                 this.getTokenDataETH(address),
                 this.getNFTDataETH(address)
             ]);
