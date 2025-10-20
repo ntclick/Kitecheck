@@ -126,7 +126,12 @@ class SimpleRankChecker {
             console.log('📝 Fetching transaction count via ETH RPC...');
             const transactionCount = await this.makeEthRpcRequest('eth_getTransactionCount', [address, 'latest']);
             const count = parseInt(transactionCount, 16);
-            console.log(`✅ Transaction count fetched from onchain: ${count}`);
+            console.log(`✅ Transaction count (nonce) fetched from onchain: ${count}`);
+            
+            // eth_getTransactionCount returns the nonce (next transaction number)
+            // So actual transaction count = nonce (since nonce starts from 0)
+            // No need to add +1, the count is already correct
+            console.log(`📊 Actual transaction count: ${count}`);
             return { result: transactionCount };
         } catch (error) {
             console.warn('Transaction count not available from ETH RPC:', error.message);
@@ -311,17 +316,24 @@ class SimpleRankChecker {
     async getAccountData(address) {
         try {
             console.log('🔍 Fetching onchain data for:', address);
-            console.log('🔑 Using ETH RPC methods...');
+            console.log('🔑 Using optimized ETH RPC methods...');
             
-            // Fetch all data in parallel using ETH RPC
-            const [accountInfo, balanceData, transactionData, tokenData, nftData, networkStats] = await Promise.all([
-                this.getAccountInfoETH(address),
+            // Start with essential data first (balance and transaction count)
+            console.log('⚡ Starting with essential data...');
+            const [balanceData, transactionData] = await Promise.all([
                 this.getBalanceETH(address),
-                this.getTransactionDataETH(address),
-                this.getTokenDataETH(address),
-                this.getNFTDataETH(address),
-                this.getNetworkStatsETH()
+                this.getTransactionDataETH(address)
             ]);
+            
+            // Then fetch additional data in parallel
+            console.log('⚡ Fetching additional data...');
+            const [tokenData, nftData] = await Promise.all([
+                this.getTokenDataETH(address),
+                this.getNFTDataETH(address)
+            ]);
+            
+            // Get network stats last (least critical)
+            const networkStats = await this.getNetworkStatsETH();
 
             // Parse balance correctly
             let balanceInEther = 0;
