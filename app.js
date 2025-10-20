@@ -140,13 +140,13 @@ class SimpleRankChecker {
         try {
             console.log('📝 Fetching transaction count via ETH RPC...');
             const transactionCount = await this.makeEthRpcRequest('eth_getTransactionCount', [address, 'latest']);
-            const count = parseInt(transactionCount, 16);
-            console.log(`✅ Transaction count (nonce) fetched from onchain: ${count}`);
+            const nonce = parseInt(transactionCount, 16);
+            console.log(`✅ Transaction nonce fetched from onchain: ${nonce}`);
             
             // eth_getTransactionCount returns the nonce (next transaction number)
-            // So actual transaction count = nonce (since nonce starts from 0)
-            // No need to add +1, the count is already correct
-            console.log(`📊 Actual transaction count: ${count}`);
+            // Nonce starts from 0, so if nonce is 46, it means 46 transactions have been sent
+            // This matches KiteScan's transaction count
+            console.log(`📊 Actual transaction count: ${nonce} (nonce = sent transactions)`);
             return { result: transactionCount };
         } catch (error) {
             console.warn('Transaction count not available from ETH RPC:', error.message);
